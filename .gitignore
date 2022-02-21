@@ -1,0 +1,7 @@
+build/
+.cipd/
+builddir/
+test/
+out/
+v8*/
+.gclient*
