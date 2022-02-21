@@ -28,7 +28,7 @@ else
 endif
 
 command = [
-	python, '@INPUT@', 
+	python, join_paths(meson.current_source_dir(), 'build.py'),
 	'--build-dir', meson.current_build_dir(), 
 	'--header-out', meson.current_source_dir(),
 	'--target', get_option('buildtype'),
@@ -43,6 +43,10 @@ command += [
 	gclient.full_path(),
 	ninja.full_path(),
 ]
+
+run_command(command + ['--gen-headers'], check: true)
+# message(command.stdout())
+
 
 outputs = [
 	'v8_monolith.lib',
@@ -69,7 +73,7 @@ v8_build = custom_target('v8_build',
 		'build.py'
 	],
 	console: true,
-	command: command,
+	command: command + ['--build'],
 )
 
 # TODO allow shared
