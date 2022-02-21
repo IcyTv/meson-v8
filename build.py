@@ -8,6 +8,7 @@ import shutil
 import argparse
 import pathlib
 import time
+import glob
 
 
 class bcolors:
@@ -28,6 +29,7 @@ if sys.platform != 'win32':
 parser = argparse.ArgumentParser(description='Build v8.')
 
 parser.add_argument('--build-dir', default=os.getcwd(), type=pathlib.Path)
+parser.add_argument('--header-out', default=os.getcwd(), type=pathlib.Path)
 parser.add_argument('--target', default='debug')
 parser.add_argument('--is-clang', action='store_true')
 parser.add_argument('--cc-wrapper', default='')
@@ -40,12 +42,12 @@ parser.add_argument('--shared', action='store_false')
 args = parser.parse_args()
 
 start = time.time()
-print(bcolors.OKBLUE + "Setting up build directory %s..." %
-      args.build_dir + bcolors.ENDC)
+print(bcolors.OKBLUE + "Setting up build directory %s %s..." %
+      (args.build_dir, args.target) + bcolors.ENDC)
 
 build_dir = args.build_dir
 if str(build_dir).endswith('.py'):
-	build_dir = build_dir.parent
+    build_dir = build_dir.parent
 
 os.chdir(build_dir)
 
@@ -78,7 +80,16 @@ gn_args = [
     'v8_use_external_startup_data=false',
     'is_clang=%s' % ('true' if args.is_clang else 'false'),
     'cc_wrapper="%s"' % args.cc_wrapper,
+    'is_debug=%s' % ('true' if args.target == 'debug' else 'false'),
 ]
+
+if args.shared:
+    gn_args.append('v8_expose_symbols=true')
+
+if args.target == 'debug':
+    gn_args.append('symbol_level=2')
+    gn_args.append('v8_symbol_level=2')
+    # gn_args.append('strip_absolute_paths_from_debug_symbols=true')
 
 subprocess.run(
     [args.gn, 'gen', outname, '--args=%s' % " ".join(gn_args)], shell=True, check=True,
@@ -94,7 +105,7 @@ subprocess.run(
 
 delta = time.time() - start
 
-print(bcolors.OKGREEN + "Done. Took %.02f" % delta + bcolors.ENDC)
+print(bcolors.OKGREEN + "Done. Took %.02fs" % delta + bcolors.ENDC)
 
 # TODO - Add cross platform support. Currently only supports Windows.
 os.chdir('..')
@@ -112,4 +123,43 @@ shutil.copy(
 shutil.copy(
     os.path.join('v8', outname, 'obj/v8_libbase.lib'),
     'v8_libbase.lib'
+)
+
+pdbs = [
+    'v8_base_without_compiler_0_cc.pdb',
+    'v8_cppgc_shared_cc.pdb',
+    'v8_initializers_cc.pdb',
+    'v8_init_cc.pdb',
+    'v8_libbase_cc.pdb',
+    'v8_libplatform_cc.pdb',
+    'v8_snapshot_cc.pdb',
+    'v8_compiler_cc.pdb',
+    'v8_bigint_cc.pdb',
+    'v8_base_without_compiler_1_cc.pdb',
+]
+
+if sys.platform == 'win32':
+    for pdb in pdbs:
+        path = os.path.join('v8', outname, 'obj', pdb)
+        shutil.copy(path, pdb)
+
+if not args.header_out.exists():
+    args.header_out.mkdir()
+
+
+def keep(filename):
+    # TODO figure out a better way to do this
+    return filename.endswith('.h') or filename == 'libplatform'
+
+
+def ignore_non_headers(d, files):
+    return [f for f in files if not keep(f)]
+
+
+# TODO - Do we want to symlink?
+shutil.copytree(
+    os.path.join('v8', 'include/'),
+    os.path.join(args.header_out, 'include/'),
+    dirs_exist_ok=True,
+    ignore=ignore_non_headers
 )

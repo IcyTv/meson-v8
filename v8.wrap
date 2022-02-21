@@ -1,7 +1,7 @@
 [wrap-git]
 directory = v8
 url = https://github.com/IcyTv/meson-v8
-revision = master
+revision = main
 
 [provide]
 v8 = v8_dep

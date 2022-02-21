@@ -4,4 +4,6 @@ builddir/
 test/
 out/
 v8*/
+include/*
+!include/.gitkeep
 .gclient*

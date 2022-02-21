@@ -30,6 +30,7 @@ endif
 command = [
 	python, '@INPUT@', 
 	'--build-dir', meson.current_build_dir(), 
+	'--header-out', meson.current_source_dir(),
 	'--target', get_option('buildtype'),
 ]
 if is_clang
@@ -43,10 +44,27 @@ command += [
 	ninja.full_path(),
 ]
 
+outputs = [
+	'v8_monolith.lib',
+	'v8_libplatform.lib',
+]
+
+# TODO only if windows
+outputs += [
+	'v8_base_without_compiler_0_cc.pdb',
+	'v8_cppgc_shared_cc.pdb',
+	'v8_initializers_cc.pdb',
+	'v8_init_cc.pdb',
+	'v8_libbase_cc.pdb',
+	'v8_libplatform_cc.pdb',
+	'v8_snapshot_cc.pdb',
+	'v8_compiler_cc.pdb',
+	'v8_bigint_cc.pdb',
+	'v8_base_without_compiler_1_cc.pdb',
+]
+
 v8_build = custom_target('v8_build',
-	output: [
-		'v8_monolith.lib',
-	],
+	output: outputs,
 	input: [
 		'build.py'
 	],
@@ -57,7 +75,7 @@ v8_build = custom_target('v8_build',
 # TODO allow shared
 v8 = static_library('v8', [v8_build])
 
-inc_path = join_paths(meson.current_build_dir(), 'v8', 'include')
+inc_path = join_paths(meson.current_source_dir(), 'include')
 inc = include_directories(inc_path)
 
 v8_dep = declare_dependency(
