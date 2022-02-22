@@ -117,8 +117,8 @@ if args.gen_headers:
 
     # TODO - Do we want to symlink?
     shutil.copytree(
-        os.path.join(args.build_dir, 'v8', 'include/'),
-        os.path.join(args.header_out, 'include/'),
+        os.path.join(args.build_dir, 'v8', 'include'),
+        os.path.join(args.header_out, 'include'),
         dirs_exist_ok=True,
         ignore=ignore_non_headers
     )
