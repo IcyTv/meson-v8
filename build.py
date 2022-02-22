@@ -110,7 +110,7 @@ if args.gen_headers:
 
     def keep(filename):
         # TODO figure out a better way to do this
-        return filename.endswith('.h') or filename == 'libplatform'
+        return filename.endswith('.h') or filename == 'libplatform' or filename == 'cppgc'
 
     def ignore_non_headers(d, files):
         return [f for f in files if not keep(f)]
