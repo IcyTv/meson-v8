@@ -6,14 +6,6 @@ python = find_program('python3')
 ninja = find_program('ninja')
 sccache = find_program('sccache', required: false)
 
-# v8_src = custom_target('v8_src',
-# 	output: 'v8',
-# 	console: true,
-# 	command: [fetch, '--no-history', 'v8'],
-# 	install: true,
-# 	install_dir: 'v8',
-# )
-
 is_clang = meson.get_compiler('cpp').get_id() == 'clang'
 
 cc_wrapper = ''
@@ -77,12 +69,12 @@ v8_build = custom_target('v8_build',
 )
 
 # TODO allow shared
-v8 = static_library('v8', [v8_build])
+inc = include_directories('include')
+libv8 = static_library('v8', [v8_build], include_directories: inc)
 
-inc_path = join_paths(meson.current_source_dir(), 'include')
-inc = include_directories(inc_path)
 
 v8_dep = declare_dependency(
 	include_directories: inc,
-	link_with: v8,
+	link_with: libv8,
+	version: meson.project_version(),
 )
