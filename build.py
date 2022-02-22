@@ -140,17 +140,17 @@ if args.build:
 
     shutil.copy(
         os.path.join(args.build_dir, 'v8', outname, 'obj/v8_monolith.lib'),
-        'v8_monolith.lib'
+        os.path.join(args.build_dir, 'v8_monolith.lib')
     )
 
     shutil.copy(
         os.path.join(args.build_dir, 'v8', outname, 'obj/v8_libplatform.lib'),
-        'v8_libplatform.lib'
+        os.path.join(args.build_dir, 'v8_libplatform.lib')
     )
 
     shutil.copy(
         os.path.join(args.build_dir, 'v8', outname, 'obj/v8_libbase.lib'),
-        'v8_libbase.lib'
+        os.path.join(args.build_dir, 'v8_libbase.lib')
     )
 
     pdbs = [
