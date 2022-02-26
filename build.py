@@ -88,6 +88,7 @@ if args.gen_headers:
         'v8_monolithic=true',
         'v8_static_library=%s' % ('true' if args.shared else 'false'),
         'v8_use_external_startup_data=false',
+        'enable_iterator_debugging=true',
         'is_clang=%s' % ('true' if args.is_clang else 'false'),
         'cc_wrapper="%s"' % args.cc_wrapper,
         'is_debug=%s' % ('true' if args.target == 'debug' else 'false'),
@@ -153,20 +154,20 @@ if args.build:
         os.path.join(args.build_dir, 'v8_libbase.lib')
     )
 
-    pdbs = [
-        'v8_base_without_compiler_0_cc.pdb',
-        'v8_cppgc_shared_cc.pdb',
-        'v8_initializers_cc.pdb',
-        'v8_init_cc.pdb',
-        'v8_libbase_cc.pdb',
-        'v8_libplatform_cc.pdb',
-        'v8_snapshot_cc.pdb',
-        'v8_compiler_cc.pdb',
-        'v8_bigint_cc.pdb',
-        'v8_base_without_compiler_1_cc.pdb',
-    ]
+    # pdbs = [
+    #     'v8_base_without_compiler_0_cc.pdb',
+    #     'v8_cppgc_shared_cc.pdb',
+    #     'v8_initializers_cc.pdb',
+    #     'v8_init_cc.pdb',
+    #     'v8_libbase_cc.pdb',
+    #     'v8_libplatform_cc.pdb',
+    #     'v8_snapshot_cc.pdb',
+    #     'v8_compiler_cc.pdb',
+    #     'v8_bigint_cc.pdb',
+    #     'v8_base_without_compiler_1_cc.pdb',
+    # ]
 
-    if sys.platform == 'win32':
-        for pdb in pdbs:
-            path = os.path.join('v8', outname, 'obj', pdb)
-            shutil.copy(path, pdb)
+    # if sys.platform == 'win32':
+    #     for pdb in pdbs:
+    #         path = os.path.join('v8', outname, 'obj', pdb)
+    #         shutil.copy(path, pdb)

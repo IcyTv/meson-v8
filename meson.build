@@ -19,11 +19,16 @@ else
 	endif
 endif
 
+buildtype = 'release'
+if get_option('debug')
+	buildtype = 'debug'
+endif
+
 command = [
 	python, join_paths(meson.current_source_dir(), 'build.py'),
 	'--build-dir', meson.current_build_dir(), 
 	'--header-out', meson.current_source_dir(),
-	'--target', get_option('buildtype'),
+	'--target', buildtype,
 ]
 if is_clang
 	command += ['--clang']
@@ -42,7 +47,7 @@ run_command(command + ['--gen-headers'], check: true)
 
 outputs = [
 	'v8_monolith.lib',
-	'v8_libplatform.lib',
+	# 'v8_libplatform.lib', # Apparently included in v8_monolith.lib
 ]
 
 # TODO only if windows
@@ -68,13 +73,18 @@ v8_build = custom_target('v8_build',
 	command: command + ['--build'],
 )
 
-# TODO allow shared
 inc = include_directories('include')
-libv8 = static_library('v8', [v8_build], include_directories: inc)
 
+# TODO allow shared
+libv8 = static_library('v8', 
+	[v8_build], 
+	include_directories: inc,
+	install: true,
+
+)
 
 v8_dep = declare_dependency(
 	include_directories: inc,
-	link_with: libv8,
+	link_with: [libv8],
 	version: meson.project_version(),
 )
