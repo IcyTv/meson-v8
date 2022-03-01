@@ -43,12 +43,9 @@ parser.add_argument('--build', action='store_true')
 
 args = parser.parse_args()
 
-assert(args.gen_headers or args.build,
-       'Must specify either --gen-headers or --build')
-
 start = time.time()
-print(bcolors.OKBLUE + "Setting up build directory %s %s..." %
-      (args.build_dir, args.target) + bcolors.ENDC)
+# print(bcolors.OKBLUE + "Setting up build directory %s %s..." %
+#       (args.build_dir, args.target) + bcolors.ENDC)
 
 build_dir = args.build_dir
 if str(build_dir).endswith('.py'):
@@ -63,7 +60,7 @@ outname = 'out/x64.custom-%s' % args.target
 
 if args.gen_headers:
     if os.path.exists(os.path.join('v8', outname, 'args.gn')) and not args.build and os.path.exists(os.path.join(args.header_out, 'include')):
-        print("Reusing existing installation")
+        # print("Reusing existing installation")
         sys.exit(0)
 
     subprocess.run(
@@ -72,14 +69,14 @@ if args.gen_headers:
         env=my_env
     )
 
-    print(bcolors.OKGREEN + "Syncing..." + bcolors.ENDC)
+    # print(bcolors.OKGREEN + "Syncing..." + bcolors.ENDC)
 
     subprocess.run(
         [args.gclient, 'sync', '--revision', args.revision, '--shallow', '--no-history', '-A'], shell=True, check=True,
         env=my_env
     )
 
-    print(bcolors.OKGREEN + "Configuring with gn..." + bcolors.ENDC)
+    # print(bcolors.OKGREEN + "Configuring with gn..." + bcolors.ENDC)
 
     os.chdir('v8')
 
@@ -125,16 +122,22 @@ if args.gen_headers:
     )
 
 if args.build:
-    print(bcolors.OKGREEN + "Building v8 Monolith..." + bcolors.ENDC)
+    # print(bcolors.OKGREEN + "Building v8 Monolith..." + bcolors.ENDC)
 
-    subprocess.run(
-        [args.ninja, '-C', os.path.join('v8', outname), 'v8_monolith'], shell=True, check=True,
-        env=my_env
+    out = subprocess.run(
+        [args.ninja, '-C', os.path.join('v8', outname), 'v8_monolith'], check=True,
+        env=my_env, capture_output=True
     )
+
+    out = out.stdout.decode('utf-8')
+    if "no work to do." in out:
+        sys.exit(0)
+    else:
+        print(out)
 
     delta = time.time() - start
 
-    print(bcolors.OKGREEN + "Done. Took %.02fs" % delta + bcolors.ENDC)
+    # print(bcolors.OKGREEN + "Done. Took %.02fs" % delta + bcolors.ENDC)
 
     # TODO - Add cross platform support. Currently only supports Windows.
     os.chdir('..')
