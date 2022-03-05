@@ -44,9 +44,6 @@ parser.add_argument('--build', action='store_true')
 args = parser.parse_args()
 
 start = time.time()
-# print(bcolors.OKBLUE + "Setting up build directory %s %s..." %
-#       (args.build_dir, args.target) + bcolors.ENDC)
-
 build_dir = args.build_dir
 if str(build_dir).endswith('.py'):
     build_dir = build_dir.parent
@@ -59,37 +56,18 @@ my_env['DEPOT_TOOLS_WIN_TOOLCHAIN'] = '0'
 outname = 'out/x64.custom-%s' % args.target
 
 if args.gen_headers:
-    if os.path.exists(os.path.join('v8', outname, 'args.gn')) and not args.build and os.path.exists(os.path.join(args.header_out, 'include')):
-        # print("Reusing existing installation")
-        sys.exit(0)
-
-    subprocess.run(
-        [args.gclient, 'config', '--name', 'v8', '--unmanaged',
-         'https://chromium.googlesource.com/v8/v8.git'], shell=True, check=True,
-        env=my_env
-    )
-
-    # print(bcolors.OKGREEN + "Syncing..." + bcolors.ENDC)
-
-    subprocess.run(
-        [args.gclient, 'sync', '--revision', args.revision, '--shallow', '--no-history', '-A'], shell=True, check=True,
-        env=my_env
-    )
-
-    # print(bcolors.OKGREEN + "Configuring with gn..." + bcolors.ENDC)
-
-    os.chdir('v8')
+    args_file_found = False
 
     gn_args = [
         'is_component_build=false',
         'v8_monolithic=true',
-        'v8_static_library=%s' % ('true' if args.shared else 'false'),
+        'v8_static_library=true',
         'v8_use_external_startup_data=false',
         'enable_iterator_debugging=true',
         'is_clang=%s' % ('true' if args.is_clang else 'false'),
         'cc_wrapper="%s"' % args.cc_wrapper,
         'is_debug=%s' % ('true' if args.target == 'debug' else 'false'),
-    ]
+        ]
 
     if args.shared:
         gn_args.append('v8_expose_symbols=true')
@@ -98,6 +76,40 @@ if args.gen_headers:
         gn_args.append('symbol_level=2')
         gn_args.append('v8_symbol_level=2')
         # gn_args.append('strip_absolute_paths_from_debug_symbols=true')
+
+    if os.path.exists(os.path.join('v8', outname, 'args.gn')) and not args.build and os.path.exists(os.path.join(args.header_out, 'include')):
+        args_file_found = True
+        # print("Reusing existing installation")
+        with open(os.path.join('v8', outname, 'args.gn'), 'r') as f:
+            read = f.read()
+            found = False
+            for arg in gn_args:
+                if not arg in read:
+                    found = True
+            if not found:
+                sys.exit(0)
+
+
+    if not args_file_found:
+        print(bcolors.OKBLUE + "Setting up build directory %s %s..." %
+              (args.build_dir, args.target) + bcolors.ENDC)
+
+        subprocess.run(
+            [args.gclient, 'config', '--name', 'v8', '--unmanaged',
+             'https://chromium.googlesource.com/v8/v8.git'], shell=True, check=True,
+            env=my_env
+        )
+
+        print(bcolors.OKGREEN + "Syncing..." + bcolors.ENDC)
+
+        subprocess.run(
+            [args.gclient, 'sync', '--revision', args.revision, '--shallow', '--no-history', '-A'], shell=True, check=True,
+            env=my_env
+        )
+
+    print(bcolors.OKGREEN + "Configuring with gn..." + bcolors.ENDC)
+
+    os.chdir('v8')
 
     subprocess.run(
         [args.gn, 'gen', outname, '--args=%s' % " ".join(gn_args)], shell=True, check=True,
@@ -126,51 +138,31 @@ if args.build:
 
     out = subprocess.run(
         [args.ninja, '-C', os.path.join('v8', outname), 'v8_monolith'], check=True,
-        env=my_env, capture_output=True
+        env=my_env,
+        shell=True
+        # capture_output=True
     )
 
-    out = out.stdout.decode('utf-8')
-    if "no work to do." in out:
-        sys.exit(0)
-    else:
-        print(out)
+    # out = out.stdout.decode('utf-8')
+    # if "no work to do." in out:
+    #     sys.exit(0)
+    # else:
+    #     print(out)
 
     delta = time.time() - start
 
-    # print(bcolors.OKGREEN + "Done. Took %.02fs" % delta + bcolors.ENDC)
+    print(bcolors.OKGREEN + "Done. Took %.02fs" % delta + bcolors.ENDC)
 
     # TODO - Add cross platform support. Currently only supports Windows.
     os.chdir('..')
 
-    shutil.copy(
-        os.path.join(args.build_dir, 'v8', outname, 'obj/v8_monolith.lib'),
-        os.path.join(args.build_dir, 'v8_monolith.lib')
-    )
+    files = [
+		'v8_monolith.lib',
+    ]
 
-    shutil.copy(
-        os.path.join(args.build_dir, 'v8', outname, 'obj/v8_libplatform.lib'),
-        os.path.join(args.build_dir, 'v8_libplatform.lib')
-    )
+    for i in files:
+        shutil.copy(
+            os.path.join(args.build_dir, 'v8', outname, 'obj', i),
+            os.path.join(args.build_dir, os.path.basename(i))
+        )
 
-    shutil.copy(
-        os.path.join(args.build_dir, 'v8', outname, 'obj/v8_libbase.lib'),
-        os.path.join(args.build_dir, 'v8_libbase.lib')
-    )
-
-    # pdbs = [
-    #     'v8_base_without_compiler_0_cc.pdb',
-    #     'v8_cppgc_shared_cc.pdb',
-    #     'v8_initializers_cc.pdb',
-    #     'v8_init_cc.pdb',
-    #     'v8_libbase_cc.pdb',
-    #     'v8_libplatform_cc.pdb',
-    #     'v8_snapshot_cc.pdb',
-    #     'v8_compiler_cc.pdb',
-    #     'v8_bigint_cc.pdb',
-    #     'v8_base_without_compiler_1_cc.pdb',
-    # ]
-
-    # if sys.platform == 'win32':
-    #     for pdb in pdbs:
-    #         path = os.path.join('v8', outname, 'obj', pdb)
-    #         shutil.copy(path, pdb)
