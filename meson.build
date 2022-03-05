@@ -46,24 +46,10 @@ run_command(command + ['--gen-headers'], check: true)
 
 
 outputs = [
-	'v8_monolith.lib',
-	# 'v8_libplatform.lib', # Apparently included in v8_monolith.lib
+	'v8_monolith.lib'
 ]
 
-# TODO only if windows
-outputs += [
-	'v8_base_without_compiler_0_cc.pdb',
-	'v8_cppgc_shared_cc.pdb',
-	'v8_initializers_cc.pdb',
-	'v8_init_cc.pdb',
-	'v8_libbase_cc.pdb',
-	'v8_libplatform_cc.pdb',
-	'v8_snapshot_cc.pdb',
-	'v8_compiler_cc.pdb',
-	'v8_bigint_cc.pdb',
-	'v8_base_without_compiler_1_cc.pdb',
-]
-
+# TODO https://mesonbuild.com/Reference-manual_functions.html#custom_target
 v8_build = custom_target('v8_build',
 	output: outputs,
 	input: [
@@ -76,11 +62,9 @@ v8_build = custom_target('v8_build',
 inc = include_directories('include')
 
 # TODO allow shared
-libv8 = static_library('v8', 
-	[v8_build], 
+libv8 = static_library('libv8',
+	[v8_build],
 	include_directories: inc,
-	install: true,
-
 )
 
 v8_dep = declare_dependency(
